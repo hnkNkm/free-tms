@@ -7,6 +7,7 @@ import Login from '@/pages/Login';
 import Dashboard from '@/pages/Dashboard';
 import Employees from '@/pages/Employees';
 import EmployeeProfile from '@/pages/EmployeeProfile';
+import Skills from '@/pages/Skills';
 
 function App() {
   const fetchCurrentUser = useAuthStore((state) => state.fetchCurrentUser);
@@ -45,6 +46,16 @@ function App() {
             <PrivateRoute>
               <Layout>
                 <EmployeeProfile />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/skills"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <Skills />
               </Layout>
             </PrivateRoute>
           }

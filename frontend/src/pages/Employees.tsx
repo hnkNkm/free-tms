@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { api } from '@/lib/axios';
-import { Plus, Edit, Search } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { api } from "@/lib/axios";
+import { Plus, Edit, Search } from "lucide-react";
 
 interface Employee {
   id: number;
@@ -14,71 +14,111 @@ interface Employee {
   joined_date?: string;
 }
 
+interface Skill {
+  id: number;
+  name: string;
+  category: string;
+}
+
 export default function Employees() {
   const navigate = useNavigate();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const [selectedSkillIds, setSelectedSkillIds] = useState<number[]>([]);
 
   useEffect(() => {
     fetchEmployees();
+    fetchSkills();
   }, []);
 
   const fetchEmployees = async () => {
     try {
-      const response = await api.get('/employees/');
+      const response = await api.get("/employees/");
       setEmployees(response.data);
     } catch (error) {
-      console.error('Failed to fetch employees:', error);
+      console.error("Failed to fetch employees:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchSkills = async () => {
+    try {
+      const response = await api.get("/skills/");
+      setSkills(response.data);
+    } catch (error) {
+      console.error("Failed to fetch skills:", error);
+    }
+  };
+
+  const searchEmployeesBySkills = async () => {
+    if (selectedSkillIds.length === 0) {
+      fetchEmployees();
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const skillIds = selectedSkillIds.join(",");
+      const response = await api.get(`/employees/search?skill_ids=${skillIds}`);
+      setEmployees(response.data);
+    } catch (error) {
+      console.error("Failed to search employees by skills:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    searchEmployeesBySkills();
+  }, [selectedSkillIds]);
+
+  const toggleSkillFilter = (skillId: number) => {
+    setSelectedSkillIds((prev) =>
+      prev.includes(skillId)
+        ? prev.filter((id) => id !== skillId)
+        : [...prev, skillId]
+    );
   };
 
   const filteredEmployees = employees.filter(
     (employee) =>
       employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (employee.department?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (employee.position?.toLowerCase().includes(searchTerm.toLowerCase()))
+      employee.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.position?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case 'admin':
-        return 'bg-red-100 text-red-800';
-      case 'manager':
-        return 'bg-blue-100 text-blue-800';
+      case "admin":
+        return "bg-red-100 text-red-800";
+      case "manager":
+        return "bg-blue-100 text-blue-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case 'admin':
-        return '管理者';
-      case 'manager':
-        return 'マネージャー';
+      case "admin":
+        return "管理者";
+      case "manager":
+        return "マネージャー";
       default:
-        return '一般社員';
+        return "一般社員";
     }
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">読み込み中...</div>
-      </div>
-    );
-  }
 
   return (
     <div>
       <div className="sm:flex sm:items-center sm:justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-900">社員管理</h2>
         <button
-          onClick={() => navigate('/employees/new')}
+          onClick={() => navigate("/employees/new")}
           className="mt-3 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           <Plus className="h-5 w-5 mr-2" />
@@ -86,8 +126,10 @@ export default function Employees() {
         </button>
       </div>
 
-      {/* Search bar */}
-      <div className="mb-6">
+      {loading && <div className="mb-4 text-gray-500">読み込み中...</div>}
+
+      {/* Search and Filters */}
+      <div className="mb-6 space-y-4">
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search className="h-5 w-5 text-gray-400" />
@@ -100,6 +142,35 @@ export default function Employees() {
             placeholder="名前、メール、部署、役職で検索..."
           />
         </div>
+
+        {/* スキルフィルター */}
+        {skills.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              スキルで絞り込み
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {skills.slice(0, 20).map((skill) => (
+                <button
+                  key={skill.id}
+                  onClick={() => toggleSkillFilter(skill.id)}
+                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                    selectedSkillIds.includes(skill.id)
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  {skill.name}
+                </button>
+              ))}
+              {skills.length > 20 && (
+                <span className="px-3 py-1 text-sm text-gray-500">
+                  +{skills.length - 20} 以上...
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Employee table */}
@@ -123,7 +194,9 @@ export default function Employees() {
                       <div className="text-sm font-medium text-gray-900">
                         {employee.name}
                       </div>
-                      <div className="text-sm text-gray-500">{employee.email}</div>
+                      <div className="text-sm text-gray-500">
+                        {employee.email}
+                      </div>
                       <div className="flex items-center mt-1">
                         <span className="text-xs text-gray-500">
                           {employee.department} / {employee.position}

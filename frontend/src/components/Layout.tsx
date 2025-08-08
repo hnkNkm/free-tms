@@ -9,7 +9,8 @@ import {
   BarChart3, 
   LogOut,
   Menu,
-  X
+  X,
+  Award
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -31,6 +32,7 @@ export default function Layout({ children }: LayoutProps) {
   const menuItems = [
     { path: '/', label: 'ダッシュボード', icon: Home },
     { path: '/employees', label: '社員管理', icon: Users },
+    { path: '/skills', label: 'スキル管理', icon: Award },
     { path: '/search', label: '検索', icon: Search },
     { path: '/jobs', label: 'ジョブ管理', icon: Briefcase },
     { path: '/analytics', label: '分析', icon: BarChart3 },

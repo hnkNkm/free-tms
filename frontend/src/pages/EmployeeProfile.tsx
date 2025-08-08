@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { api } from '@/lib/axios';
-import { useAuthStore } from '@/stores/authStore';
-import { Save, ArrowLeft } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { api } from "@/lib/axios";
+import { useAuthStore } from "@/stores/authStore";
+import { Save, ArrowLeft, Plus, X } from "lucide-react";
 
 interface EmployeeProfile {
   id: number;
@@ -18,6 +18,20 @@ interface EmployeeProfile {
   joined_date?: string;
 }
 
+interface Skill {
+  id: number;
+  name: string;
+  category: string;
+}
+
+interface EmployeeSkill {
+  skill_id: number;
+  skill_name: string;
+  skill_category: string;
+  proficiency_level: number;
+  years_of_experience: number;
+}
+
 export default function EmployeeProfile() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -25,15 +39,23 @@ export default function EmployeeProfile() {
   const [profile, setProfile] = useState<EmployeeProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [projectTypes, setProjectTypes] = useState('');
+  const [error, setError] = useState("");
+  const [projectTypes, setProjectTypes] = useState("");
+  const [employeeSkills, setEmployeeSkills] = useState<EmployeeSkill[]>([]);
+  const [availableSkills, setAvailableSkills] = useState<Skill[]>([]);
+  const [showSkillModal, setShowSkillModal] = useState(false);
+  const [selectedSkillId, setSelectedSkillId] = useState<number | null>(null);
+  const [proficiencyLevel, setProficiencyLevel] = useState(3);
+  const [yearsOfExperience, setYearsOfExperience] = useState(1);
 
   const isOwnProfile = currentUser?.id === Number(id);
-  const canEdit = isOwnProfile || currentUser?.role === 'admin';
+  const canEdit = isOwnProfile || currentUser?.role === "admin";
 
   useEffect(() => {
     if (id) {
       fetchEmployeeProfile();
+      fetchEmployeeSkills();
+      fetchAvailableSkills();
     }
   }, [id]);
 
@@ -41,13 +63,98 @@ export default function EmployeeProfile() {
     try {
       const response = await api.get(`/employees/${id}`);
       setProfile(response.data);
-      setProjectTypes(response.data.preferred_project_types?.join(', ') || '');
+      setProjectTypes(response.data.preferred_project_types?.join(", ") || "");
     } catch (error) {
-      console.error('Failed to fetch employee profile:', error);
-      setError('プロフィールの取得に失敗しました');
+      console.error("Failed to fetch employee profile:", error);
+      setError("プロフィールの取得に失敗しました");
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchEmployeeSkills = async () => {
+    try {
+      const response = await api.get(`/employees/${id}/skills`);
+      setEmployeeSkills(response.data);
+    } catch (error) {
+      console.error("Failed to fetch employee skills:", error);
+    }
+  };
+
+  const fetchAvailableSkills = async () => {
+    try {
+      const response = await api.get("/skills/");
+      setAvailableSkills(response.data);
+    } catch (error) {
+      console.error("Failed to fetch available skills:", error);
+    }
+  };
+
+  const handleAddSkill = async () => {
+    if (!selectedSkillId || !canEdit) return;
+
+    try {
+      await api.post(`/employees/${id}/skills`, {
+        skill_id: selectedSkillId,
+        proficiency_level: proficiencyLevel,
+        years_of_experience: yearsOfExperience,
+      });
+      await fetchEmployeeSkills();
+      setShowSkillModal(false);
+      setSelectedSkillId(null);
+      setProficiencyLevel(3);
+      setYearsOfExperience(1);
+    } catch (error) {
+      console.error("Failed to add skill:", error);
+      alert("スキルの追加に失敗しました");
+    }
+  };
+
+  const handleUpdateSkill = async (
+    skillId: number,
+    proficiency: number,
+    years: number
+  ) => {
+    if (!canEdit) return;
+
+    try {
+      await api.put(`/employees/${id}/skills/${skillId}`, {
+        proficiency_level: proficiency,
+        years_of_experience: years,
+      });
+      await fetchEmployeeSkills();
+    } catch (error) {
+      console.error("Failed to update skill:", error);
+      alert("スキルの更新に失敗しました");
+    }
+  };
+
+  const handleRemoveSkill = async (skillId: number) => {
+    if (!canEdit || !confirm("このスキルを削除してもよろしいですか？")) return;
+
+    try {
+      await api.delete(`/employees/${id}/skills/${skillId}`);
+      await fetchEmployeeSkills();
+    } catch (error) {
+      console.error("Failed to remove skill:", error);
+      alert("スキルの削除に失敗しました");
+    }
+  };
+
+  const getProficiencyLabel = (level: number) => {
+    const labels = ["初心者", "初級", "中級", "上級", "エキスパート"];
+    return labels[level - 1] || "";
+  };
+
+  const getProficiencyColor = (level: number) => {
+    const colors = [
+      "bg-gray-200",
+      "bg-blue-200",
+      "bg-green-200",
+      "bg-yellow-200",
+      "bg-red-200",
+    ];
+    return colors[level - 1] || "bg-gray-200";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,11 +162,11 @@ export default function EmployeeProfile() {
     if (!profile || !canEdit) return;
 
     setSaving(true);
-    setError('');
+    setError("");
 
     try {
       const projectTypesArray = projectTypes
-        .split(',')
+        .split(",")
         .map((type) => type.trim())
         .filter((type) => type);
 
@@ -71,10 +178,10 @@ export default function EmployeeProfile() {
       };
 
       await api.put(`/employees/${id}/profile`, updateData);
-      alert('プロフィールを更新しました');
+      alert("プロフィールを更新しました");
     } catch (error) {
-      console.error('Failed to update profile:', error);
-      setError('プロフィールの更新に失敗しました');
+      console.error("Failed to update profile:", error);
+      setError("プロフィールの更新に失敗しました");
     } finally {
       setSaving(false);
     }
@@ -100,7 +207,7 @@ export default function EmployeeProfile() {
     <div className="max-w-4xl mx-auto">
       <div className="mb-6">
         <button
-          onClick={() => navigate('/employees')}
+          onClick={() => navigate("/employees")}
           className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
@@ -135,7 +242,7 @@ export default function EmployeeProfile() {
                 部署
               </label>
               <p className="mt-1 text-sm text-gray-900">
-                {profile.department || '-'}
+                {profile.department || "-"}
               </p>
             </div>
             <div>
@@ -143,7 +250,7 @@ export default function EmployeeProfile() {
                 役職
               </label>
               <p className="mt-1 text-sm text-gray-900">
-                {profile.position || '-'}
+                {profile.position || "-"}
               </p>
             </div>
           </div>
@@ -161,7 +268,7 @@ export default function EmployeeProfile() {
                 id="self_introduction"
                 rows={4}
                 disabled={!canEdit}
-                value={profile.self_introduction || ''}
+                value={profile.self_introduction || ""}
                 onChange={(e) =>
                   setProfile({ ...profile, self_introduction: e.target.value })
                 }
@@ -181,7 +288,7 @@ export default function EmployeeProfile() {
                 id="career_goals"
                 rows={3}
                 disabled={!canEdit}
-                value={profile.career_goals || ''}
+                value={profile.career_goals || ""}
                 onChange={(e) =>
                   setProfile({ ...profile, career_goals: e.target.value })
                 }
@@ -201,7 +308,7 @@ export default function EmployeeProfile() {
                 id="specialties"
                 rows={3}
                 disabled={!canEdit}
-                value={profile.specialties || ''}
+                value={profile.specialties || ""}
                 onChange={(e) =>
                   setProfile({ ...profile, specialties: e.target.value })
                 }
@@ -229,6 +336,118 @@ export default function EmployeeProfile() {
             </div>
           </div>
 
+          {/* スキル管理セクション */}
+          <div className="border-t pt-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">スキル</h3>
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => setShowSkillModal(true)}
+                  className="inline-flex items-center px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  スキルを追加
+                </button>
+              )}
+            </div>
+
+            {employeeSkills.length === 0 ? (
+              <p className="text-sm text-gray-500">
+                スキルが登録されていません
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {employeeSkills.map((skill) => (
+                  <div
+                    key={skill.skill_id}
+                    className="bg-gray-50 rounded-lg p-4"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <span className="font-medium text-gray-900">
+                          {skill.skill_name}
+                        </span>
+                        <span className="ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-800">
+                          {skill.skill_category}
+                        </span>
+                      </div>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSkill(skill.skill_id)}
+                          aria-label="スキル削除"
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">
+                          熟練度
+                        </label>
+                        {canEdit ? (
+                          <select
+                            value={skill.proficiency_level}
+                            onChange={(e) =>
+                              handleUpdateSkill(
+                                skill.skill_id,
+                                Number(e.target.value),
+                                skill.years_of_experience
+                              )
+                            }
+                            className="block w-full text-sm rounded-md border-gray-300"
+                          >
+                            <option value={1}>初心者</option>
+                            <option value={2}>初級</option>
+                            <option value={3}>中級</option>
+                            <option value={4}>上級</option>
+                            <option value={5}>エキスパート</option>
+                          </select>
+                        ) : (
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getProficiencyColor(
+                              skill.proficiency_level
+                            )}`}
+                          >
+                            {getProficiencyLabel(skill.proficiency_level)}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">
+                          経験年数
+                        </label>
+                        {canEdit ? (
+                          <input
+                            type="number"
+                            min="0"
+                            max="50"
+                            value={skill.years_of_experience}
+                            onChange={(e) =>
+                              handleUpdateSkill(
+                                skill.skill_id,
+                                skill.proficiency_level,
+                                Number(e.target.value)
+                              )
+                            }
+                            className="block w-full text-sm rounded-md border-gray-300"
+                          />
+                        ) : (
+                          <span className="text-sm text-gray-900">
+                            {skill.years_of_experience}年
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {error && (
             <div className="rounded-md bg-red-50 p-4">
               <div className="text-sm text-red-800">{error}</div>
@@ -243,12 +462,96 @@ export default function EmployeeProfile() {
                 className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save className="h-4 w-4 mr-2" />
-                {saving ? '保存中...' : '保存'}
+                {saving ? "保存中..." : "保存"}
               </button>
             </div>
           )}
         </form>
       </div>
+
+      {/* スキル追加モーダル */}
+      {showSkillModal && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              スキルを追加
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  スキル
+                </label>
+                <select
+                  value={selectedSkillId || ""}
+                  onChange={(e) => setSelectedSkillId(Number(e.target.value))}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                >
+                  <option value="">選択してください</option>
+                  {availableSkills
+                    .filter(
+                      (skill) =>
+                        !employeeSkills.some((es) => es.skill_id === skill.id)
+                    )
+                    .map((skill) => (
+                      <option key={skill.id} value={skill.id}>
+                        {skill.name} ({skill.category})
+                      </option>
+                    ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  熟練度
+                </label>
+                <select
+                  value={proficiencyLevel}
+                  onChange={(e) => setProficiencyLevel(Number(e.target.value))}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                >
+                  <option value={1}>初心者</option>
+                  <option value={2}>初級</option>
+                  <option value={3}>中級</option>
+                  <option value={4}>上級</option>
+                  <option value={5}>エキスパート</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  経験年数
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="50"
+                  value={yearsOfExperience}
+                  onChange={(e) => setYearsOfExperience(Number(e.target.value))}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowSkillModal(false);
+                  setSelectedSkillId(null);
+                  setProficiencyLevel(3);
+                  setYearsOfExperience(1);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleAddSkill}
+                disabled={!selectedSkillId}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                追加
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
