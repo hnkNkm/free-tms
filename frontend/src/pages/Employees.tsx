@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/axios';
-import { Plus, Edit, Search, Filter } from 'lucide-react';
+import { Plus, Edit, Search } from 'lucide-react';
 
 interface Employee {
   id: number;

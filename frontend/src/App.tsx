@@ -5,6 +5,7 @@ import Layout from '@/components/Layout';
 import PrivateRoute from '@/components/PrivateRoute';
 import Login from '@/pages/Login';
 import Dashboard from '@/pages/Dashboard';
+import Employees from '@/pages/Employees';
 
 function App() {
   const fetchCurrentUser = useAuthStore((state) => state.fetchCurrentUser);
@@ -32,7 +33,7 @@ function App() {
           element={
             <PrivateRoute>
               <Layout>
-                <div>社員管理（未実装）</div>
+                <Employees />
               </Layout>
             </PrivateRoute>
           }
