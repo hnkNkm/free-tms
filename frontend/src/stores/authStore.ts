@@ -14,7 +14,7 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   fetchCurrentUser: () => Promise<void>;
 }
@@ -25,21 +25,27 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
 
   login: async (email: string, password: string) => {
-    const formData = new FormData();
-    formData.append('username', email);
-    formData.append('password', password);
+    try {
+      const formData = new FormData();
+      formData.append('username', email);
+      formData.append('password', password);
 
-    const response = await api.post('/auth/login', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+      const response = await api.post('/auth/login', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
-    const { access_token } = response.data;
-    localStorage.setItem('access_token', access_token);
+      const { access_token } = response.data;
+      localStorage.setItem('access_token', access_token);
 
-    // Fetch user data after login
-    await useAuthStore.getState().fetchCurrentUser();
+      // Fetch user data after login
+      await useAuthStore.getState().fetchCurrentUser();
+      return true;
+    } catch (error) {
+      console.error('Login failed:', error);
+      return false;
+    }
   },
 
   logout: () => {

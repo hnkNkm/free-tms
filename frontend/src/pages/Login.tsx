@@ -17,8 +17,12 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      await login(email, password);
-      navigate('/');
+      const success = await login(email, password);
+      if (success) {
+        navigate('/');
+      } else {
+        setError('メールアドレスまたはパスワードが正しくありません');
+      }
     } catch (err: any) {
       setError(err.response?.data?.detail || 'ログインに失敗しました');
     } finally {
