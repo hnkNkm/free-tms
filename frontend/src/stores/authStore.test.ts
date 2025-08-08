@@ -54,7 +54,11 @@ describe('Auth Store', () => {
       expect(useAuthStore.getState().isAuthenticated).toBe(true)
       expect(useAuthStore.getState().user).toEqual(mockUser)
       
-      expect(api.post).toHaveBeenCalledWith('/auth/login', expect.any(FormData))
+      expect(api.post).toHaveBeenCalledWith('/auth/login', expect.any(FormData), {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
       expect(api.get).toHaveBeenCalledWith('/auth/me')
     })
 

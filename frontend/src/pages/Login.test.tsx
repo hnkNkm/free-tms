@@ -6,9 +6,7 @@ import Login from './Login'
 import { useAuthStore } from '@/stores/authStore'
 
 // Mock the auth store
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: vi.fn()
-}))
+vi.mock('@/stores/authStore')
 
 // Mock navigate
 const mockNavigate = vi.fn()
@@ -25,10 +23,14 @@ describe('Login Page', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(useAuthStore).mockReturnValue({
-      login: mockLogin,
-      isAuthenticated: false,
-    } as any)
+    // Zustandのセレクター形式でモックを返す
+    vi.mocked(useAuthStore).mockImplementation((selector) => {
+      const state = {
+        login: mockLogin,
+        isAuthenticated: false,
+      }
+      return selector ? selector(state) : state
+    })
   })
 
   it('should render login form', () => {
@@ -95,7 +97,13 @@ describe('Login Page', () => {
   })
 
   it('should disable submit button while loading', async () => {
-    mockLogin.mockImplementation(() => new Promise(resolve => setTimeout(() => resolve(true), 1000)))
+    // 遅延のあるPromiseを返すモック
+    let resolveLogin: (value: boolean) => void
+    const loginPromise = new Promise<boolean>((resolve) => {
+      resolveLogin = resolve
+    })
+    mockLogin.mockReturnValue(loginPromise)
+    
     const user = userEvent.setup()
 
     render(
@@ -110,10 +118,23 @@ describe('Login Page', () => {
 
     await user.type(emailInput, 'test@example.com')
     await user.type(passwordInput, 'password123')
+    
+    // フォーム送信（非同期処理が開始される）
     await user.click(submitButton)
-
-    expect(submitButton).toBeDisabled()
-    expect(screen.getByText('ログイン中...')).toBeInTheDocument()
+    
+    // ボタンが無効化され、ローディングテキストが表示されることを確認
+    await waitFor(() => {
+      expect(screen.getByText('ログイン中...')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'ログイン中...' })).toBeDisabled()
+    })
+    
+    // ログインを完了させる
+    resolveLogin!(true)
+    
+    // ナビゲーションが呼ばれることを確認
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/')
+    })
   })
 
   // 現在の実装ではisAuthenticatedチェックが含まれていないのでスキップ
