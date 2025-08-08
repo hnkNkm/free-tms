@@ -26,7 +26,7 @@ export default function Employees() {
 
   const fetchEmployees = async () => {
     try {
-      const response = await api.get('/employees');
+      const response = await api.get('/employees/');
       setEmployees(response.data);
     } catch (error) {
       console.error('Failed to fetch employees:', error);

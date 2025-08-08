@@ -56,4 +56,14 @@ async def login(
 async def get_current_user_info(
     current_user: EmployeeModel = Depends(get_current_user)
 ):
+    import json
+    # Convert preferred_project_types from JSON string to list
+    if current_user.preferred_project_types:
+        try:
+            current_user.preferred_project_types = json.loads(current_user.preferred_project_types)
+        except:
+            current_user.preferred_project_types = []
+    else:
+        current_user.preferred_project_types = []
+    
     return current_user

@@ -17,6 +17,17 @@ def read_employees(
     db: Session = Depends(get_db)
 ):
     employees = db.query(EmployeeModel).offset(skip).limit(limit).all()
+    
+    # Convert preferred_project_types from JSON string to list for each employee
+    for employee in employees:
+        if employee.preferred_project_types:
+            try:
+                employee.preferred_project_types = json.loads(employee.preferred_project_types)
+            except:
+                employee.preferred_project_types = []
+        else:
+            employee.preferred_project_types = []
+    
     return employees
 
 @router.post("/", response_model=Employee)
@@ -50,6 +61,8 @@ def read_employee(employee_id: int, db: Session = Depends(get_db)):
             employee.preferred_project_types = json.loads(employee.preferred_project_types)
         except:
             employee.preferred_project_types = []
+    else:
+        employee.preferred_project_types = []
     
     return employee
 
@@ -91,5 +104,7 @@ def update_employee_profile(
             employee.preferred_project_types = json.loads(employee.preferred_project_types)
         except:
             employee.preferred_project_types = []
+    else:
+        employee.preferred_project_types = []
     
     return employee
