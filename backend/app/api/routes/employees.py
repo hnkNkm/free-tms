@@ -33,8 +33,16 @@ def read_employees(
 @router.post("/", response_model=Employee)
 def create_employee(
     employee: EmployeeCreate,
+    current_user: EmployeeModel = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    # Only admin can create new employees
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only administrators can create new employees"
+        )
+    
     db_employee = db.query(EmployeeModel).filter(EmployeeModel.email == employee.email).first()
     if db_employee:
         raise HTTPException(status_code=400, detail="Email already registered")

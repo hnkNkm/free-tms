@@ -107,6 +107,143 @@ def test_get_nonexistent_employee(client, admin_user_data):
     assert response.status_code == 404
     assert response.json()["detail"] == "Employee not found"
 
+def test_create_employee_as_admin(client):
+    from app.db.database import get_db
+    db = next(client.app.dependency_overrides[get_db]())
+    
+    # Create admin user
+    admin_data = {
+        "name": "Admin",
+        "email": "admin@test.com",
+        "password": "admin123",
+        "role": "admin"
+    }
+    create_test_user(db, admin_data)
+    
+    token = get_auth_token(client, "admin@test.com", "admin123")
+    
+    # Create new employee
+    new_employee = {
+        "name": "New Employee",
+        "email": "newemployee@test.com",
+        "password": "password123",
+        "department": "開発部",
+        "position": "エンジニア",
+        "role": "employee"
+    }
+    
+    response = client.post(
+        "/api/v1/employees/",
+        json=new_employee,
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert data["email"] == new_employee["email"]
+    assert data["name"] == new_employee["name"]
+    assert data["department"] == new_employee["department"]
+    assert data["position"] == new_employee["position"]
+    assert data["role"] == new_employee["role"]
+    assert "password" not in data  # Password should not be returned
+    assert "password_hash" not in data  # Password hash should not be returned
+
+def test_create_employee_as_non_admin(client):
+    from app.db.database import get_db
+    db = next(client.app.dependency_overrides[get_db]())
+    
+    # Create regular user
+    user_data = {
+        "name": "Regular User",
+        "email": "user@test.com",
+        "password": "user123",
+        "role": "employee"
+    }
+    create_test_user(db, user_data)
+    
+    token = get_auth_token(client, "user@test.com", "user123")
+    
+    # Try to create new employee
+    new_employee = {
+        "name": "New Employee",
+        "email": "newemployee@test.com",
+        "password": "password123",
+        "department": "開発部",
+        "position": "エンジニア",
+        "role": "employee"
+    }
+    
+    response = client.post(
+        "/api/v1/employees/",
+        json=new_employee,
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    
+    assert response.status_code == 403
+    assert "Only administrators" in response.json()["detail"]
+
+def test_create_employee_duplicate_email(client):
+    from app.db.database import get_db
+    db = next(client.app.dependency_overrides[get_db]())
+    
+    # Create admin user
+    admin_data = {
+        "name": "Admin",
+        "email": "admin@test.com",
+        "password": "admin123",
+        "role": "admin"
+    }
+    create_test_user(db, admin_data)
+    
+    # Create existing user
+    existing_user = {
+        "name": "Existing User",
+        "email": "existing@test.com",
+        "password": "password123",
+        "role": "employee"
+    }
+    create_test_user(db, existing_user)
+    
+    token = get_auth_token(client, "admin@test.com", "admin123")
+    
+    # Try to create employee with duplicate email
+    new_employee = {
+        "name": "New Employee",
+        "email": "existing@test.com",  # Duplicate email
+        "password": "password123",
+        "department": "開発部",
+        "position": "エンジニア",
+        "role": "employee"
+    }
+    
+    response = client.post(
+        "/api/v1/employees/",
+        json=new_employee,
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    
+    assert response.status_code == 400
+    assert "Email already registered" in response.json()["detail"]
+
+def test_create_employee_without_auth(client):
+    # Try to create employee without authentication
+    new_employee = {
+        "name": "New Employee",
+        "email": "newemployee@test.com",
+        "password": "password123",
+        "department": "開発部",
+        "position": "エンジニア",
+        "role": "employee"
+    }
+    
+    response = client.post(
+        "/api/v1/employees/",
+        json=new_employee
+    )
+    
+    assert response.status_code == 401
+    assert "Not authenticated" in response.json()["detail"]
+
 def test_update_own_profile(client, test_user_data):
     from app.db.database import get_db
     db = next(client.app.dependency_overrides[get_db]())
