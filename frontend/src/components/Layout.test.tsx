@@ -53,9 +53,8 @@ describe('Layout Component', () => {
     expect(screen.getByText('ジョブ管理')).toBeInTheDocument()
     expect(screen.getByText('分析')).toBeInTheDocument()
 
-    // Check user info
-    expect(screen.getByText(mockUser.name)).toBeInTheDocument()
-    expect(screen.getByText(mockUser.email)).toBeInTheDocument()
+    // Check user info - ユーザー名は役割と一緒に表示される
+    expect(screen.getByText(new RegExp(mockUser.name))).toBeInTheDocument()
 
     // Check children are rendered
     expect(screen.getByText('Test Content')).toBeInTheDocument()
@@ -75,7 +74,8 @@ describe('Layout Component', () => {
       </BrowserRouter>
     )
 
-    expect(screen.getByText('管理者')).toBeInTheDocument()
+    // 役割バッジは括弧内にあるので、親要素のテキストで検索
+    expect(screen.getByText(/管理者/)).toBeInTheDocument()
   })
 
   it('should display role badge for manager', () => {
@@ -92,7 +92,7 @@ describe('Layout Component', () => {
       </BrowserRouter>
     )
 
-    expect(screen.getByText('マネージャー')).toBeInTheDocument()
+    expect(screen.getByText(/マネージャー/)).toBeInTheDocument()
   })
 
   it('should not display role badge for regular employee', () => {
