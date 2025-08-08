@@ -1,4 +1,5 @@
 import { Users, Briefcase, TrendingUp, Clock } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function Dashboard() {
   // TODO: 実際のデータはAPIから取得
@@ -10,46 +11,48 @@ export default function Dashboard() {
   ];
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">ダッシュボード</h2>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">ダッシュボード</h2>
+        <p className="text-muted-foreground">タレントマネジメントシステムの概要</p>
+      </div>
       
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div key={stat.label} className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <div className={`flex-shrink-0 ${stat.color} rounded-md p-3`}>
-                  <Icon className="h-6 w-6 text-white" />
+            <Card key={stat.label}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {stat.label}
+                </CardTitle>
+                <div className={`${stat.color} rounded-md p-2`}>
+                  <Icon className="h-4 w-4 text-white" />
                 </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      {stat.label}
-                    </dt>
-                    <dd className="text-lg font-medium text-gray-900">
-                      {stat.value}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
+              </CardContent>
+            </Card>
           );
         })}
       </div>
 
       {/* Recent Activities */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-            最近のアクティビティ
-          </h3>
-          <div className="text-sm text-gray-500 text-center py-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>最近のアクティビティ</CardTitle>
+          <CardDescription>
+            システム内の最新の活動状況
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground text-center py-8">
             データがありません
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

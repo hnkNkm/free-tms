@@ -3,6 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { api } from "@/lib/axios";
 import { useAuthStore } from "@/stores/authStore";
 import { Plus, Edit, Search, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Employee {
   id: number;
@@ -106,14 +114,14 @@ export default function Employees() {
       employee.position?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getRoleBadgeColor = (role: string) => {
+  const getRoleBadgeVariant = (role: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (role) {
       case "admin":
-        return "bg-red-100 text-red-800";
+        return "destructive";
       case "manager":
-        return "bg-blue-100 text-blue-800";
+        return "default";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "secondary";
     }
   };
 
@@ -128,128 +136,291 @@ export default function Employees() {
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // バリデーション
+    const errors: { [key: string]: string } = {};
+    if (!formData.name.trim()) errors.name = "名前は必須です";
+    if (!formData.email.trim())
+      errors.email = "メールアドレスは必須です";
+    if (!formData.password.trim()) {
+      errors.password = "パスワードは必須です";
+    } else if (formData.password.length < 6) {
+      errors.password = "パスワードは6文字以上で入力してください";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
+    setSubmitting(true);
+    setFormErrors({});
+
+    try {
+      await api.post("/employees/", formData);
+      await fetchEmployees();
+      setShowAddModal(false);
+      setFormData({
+        name: "",
+        email: "",
+        password: "",
+        department: "",
+        position: "",
+        role: "employee",
+      });
+    } catch (error: any) {
+      if (error.response?.status === 400) {
+        setFormErrors({
+          email: "このメールアドレスは既に登録されています",
+        });
+      } else {
+        setFormErrors({ general: "社員の登録に失敗しました" });
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
-    <div>
-      <div className="sm:flex sm:items-center sm:justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">社員管理</h2>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">社員管理</h2>
+          <p className="text-muted-foreground">社員の一覧と管理</p>
+        </div>
         {isAdmin && (
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="mt-3 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <Plus className="h-5 w-5 mr-2" />
+          <Button onClick={() => setShowAddModal(true)}>
+            <Plus className="h-4 w-4 mr-2" />
             社員を追加
-          </button>
+          </Button>
         )}
       </div>
 
-      {loading && <div className="mb-4 text-gray-500">読み込み中...</div>}
+      {loading && <div className="text-muted-foreground">読み込み中...</div>}
 
       {/* Search and Filters */}
-      <div className="mb-6 space-y-4">
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400" />
+      <Card>
+        <CardHeader>
+          <CardTitle>検索とフィルター</CardTitle>
+          <CardDescription>名前、メール、部署、役職で検索、またはスキルで絞り込み</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8"
+              placeholder="名前、メール、部署、役職で検索..."
+            />
           </div>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            placeholder="名前、メール、部署、役職で検索..."
-          />
-        </div>
 
-        {/* スキルフィルター */}
-        {skills.length > 0 && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              スキルで絞り込み
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {skills.slice(0, 20).map((skill) => (
-                <button
-                  key={skill.id}
-                  onClick={() => toggleSkillFilter(skill.id)}
-                  className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                    selectedSkillIds.includes(skill.id)
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                  }`}
-                >
-                  {skill.name}
-                </button>
-              ))}
-              {skills.length > 20 && (
-                <span className="px-3 py-1 text-sm text-gray-500">
-                  +{skills.length - 20} 以上...
-                </span>
-              )}
+          {/* スキルフィルター */}
+          {skills.length > 0 && (
+            <div>
+              <Label className="mb-2">スキルで絞り込み</Label>
+              <div className="flex flex-wrap gap-2">
+                {skills.slice(0, 20).map((skill) => (
+                  <Badge
+                    key={skill.id}
+                    variant={selectedSkillIds.includes(skill.id) ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => toggleSkillFilter(skill.id)}
+                  >
+                    {skill.name}
+                  </Badge>
+                ))}
+                {skills.length > 20 && (
+                  <span className="px-3 py-1 text-sm text-muted-foreground">
+                    +{skills.length - 20} 以上...
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Employee table */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        <ul className="divide-y divide-gray-200">
-          {filteredEmployees.length === 0 ? (
-            <li className="px-6 py-4 text-center text-gray-500">
-              社員が見つかりません
-            </li>
-          ) : (
-            filteredEmployees.map((employee) => (
-              <li key={employee.id}>
-                <div className="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                      <span className="text-gray-600 font-medium">
+      <Card>
+        <CardContent className="p-0">
+          <div className="divide-y">
+            {filteredEmployees.length === 0 ? (
+              <div className="p-6 text-center text-muted-foreground">
+                社員が見つかりません
+              </div>
+            ) : (
+              filteredEmployees.map((employee) => (
+                <div key={employee.id} className="p-6 flex items-center justify-between hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center space-x-4">
+                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                      <span className="text-sm font-medium">
                         {employee.name.charAt(0)}
                       </span>
                     </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">
+                    <div>
+                      <div className="font-medium">
                         {employee.name}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-muted-foreground">
                         {employee.email}
                       </div>
-                      <div className="flex items-center mt-1">
-                        <span className="text-xs text-gray-500">
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-muted-foreground">
                           {employee.department} / {employee.position}
                         </span>
-                        <span
-                          className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(
-                            employee.role
-                          )}`}
-                        >
+                        <Badge variant={getRoleBadgeVariant(employee.role)}>
                           {getRoleLabel(employee.role)}
-                        </span>
+                        </Badge>
                       </div>
                     </div>
                   </div>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => navigate(`/employees/${employee.id}`)}
-                    className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
                   >
-                    <Edit className="h-5 w-5" />
-                  </button>
+                    <Edit className="h-4 w-4" />
+                  </Button>
                 </div>
-              </li>
-            ))
-          )}
-        </ul>
-      </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 社員追加モーダル */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
-                新規社員登録
-              </h3>
-              <button
+      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>新規社員登録</DialogTitle>
+            <DialogDescription>
+              新しい社員の情報を入力してください
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">
+                名前 <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="name"
+                type="text"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                placeholder="田中太郎"
+              />
+              {formErrors.name && (
+                <p className="text-sm text-destructive">{formErrors.name}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">
+                メールアドレス <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                placeholder="tanaka@example.com"
+              />
+              {formErrors.email && (
+                <p className="text-sm text-destructive">
+                  {formErrors.email}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">
+                パスワード <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+                placeholder="6文字以上"
+              />
+              {formErrors.password && (
+                <p className="text-sm text-destructive">
+                  {formErrors.password}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="department">部署</Label>
+              <Input
+                id="department"
+                type="text"
+                value={formData.department}
+                onChange={(e) =>
+                  setFormData({ ...formData, department: e.target.value })
+                }
+                placeholder="開発部"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="position">役職</Label>
+              <Input
+                id="position"
+                type="text"
+                value={formData.position}
+                onChange={(e) =>
+                  setFormData({ ...formData, position: e.target.value })
+                }
+                placeholder="エンジニア"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="role">権限</Label>
+              <Select
+                value={formData.role}
+                onValueChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    role: value as "employee" | "manager" | "admin",
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="employee">一般社員</SelectItem>
+                  <SelectItem value="manager">マネージャー</SelectItem>
+                  <SelectItem value="admin">管理者</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {formErrors.general && (
+              <Alert variant="destructive">
+                <AlertDescription>
+                  {formErrors.general}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => {
                   setShowAddModal(false);
                   setFormData({
@@ -262,209 +433,16 @@ export default function Employees() {
                   });
                   setFormErrors({});
                 }}
-                aria-label="閉じる"
-                className="text-gray-400 hover:text-gray-500"
               >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-
-                // バリデーション
-                const errors: { [key: string]: string } = {};
-                if (!formData.name.trim()) errors.name = "名前は必須です";
-                if (!formData.email.trim())
-                  errors.email = "メールアドレスは必須です";
-                if (!formData.password.trim()) {
-                  errors.password = "パスワードは必須です";
-                } else if (formData.password.length < 6) {
-                  errors.password = "パスワードは6文字以上で入力してください";
-                }
-
-                if (Object.keys(errors).length > 0) {
-                  setFormErrors(errors);
-                  return;
-                }
-
-                setSubmitting(true);
-                setFormErrors({});
-
-                try {
-                  await api.post("/employees/", formData);
-                  await fetchEmployees();
-                  setShowAddModal(false);
-                  setFormData({
-                    name: "",
-                    email: "",
-                    password: "",
-                    department: "",
-                    position: "",
-                    role: "employee",
-                  });
-                } catch (error: any) {
-                  if (error.response?.status === 400) {
-                    setFormErrors({
-                      email: "このメールアドレスは既に登録されています",
-                    });
-                  } else {
-                    setFormErrors({ general: "社員の登録に失敗しました" });
-                  }
-                } finally {
-                  setSubmitting(false);
-                }
-              }}
-              className="space-y-4"
-            >
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  名前 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  placeholder="田中太郎"
-                />
-                {formErrors.name && (
-                  <p className="mt-1 text-sm text-red-600">{formErrors.name}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  メールアドレス <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  placeholder="tanaka@example.com"
-                />
-                {formErrors.email && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {formErrors.email}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  パスワード <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  placeholder="6文字以上"
-                />
-                {formErrors.password && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {formErrors.password}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  部署
-                </label>
-                <input
-                  type="text"
-                  value={formData.department}
-                  onChange={(e) =>
-                    setFormData({ ...formData, department: e.target.value })
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  placeholder="開発部"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  役職
-                </label>
-                <input
-                  type="text"
-                  value={formData.position}
-                  onChange={(e) =>
-                    setFormData({ ...formData, position: e.target.value })
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  placeholder="エンジニア"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  権限
-                </label>
-                <select
-                  value={formData.role}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      role: e.target.value as "employee" | "manager" | "admin",
-                    })
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                >
-                  <option value="employee">一般社員</option>
-                  <option value="manager">マネージャー</option>
-                  <option value="admin">管理者</option>
-                </select>
-              </div>
-
-              {formErrors.general && (
-                <div className="rounded-md bg-red-50 p-4">
-                  <div className="text-sm text-red-800">
-                    {formErrors.general}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex gap-3 justify-end pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setFormData({
-                      name: "",
-                      email: "",
-                      password: "",
-                      department: "",
-                      position: "",
-                      role: "employee",
-                    });
-                    setFormErrors({});
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  キャンセル
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {submitting ? "登録中..." : "登録"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                キャンセル
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? "登録中..." : "登録"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

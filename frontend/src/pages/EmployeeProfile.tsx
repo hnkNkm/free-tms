@@ -3,6 +3,15 @@ import { useParams, useNavigate } from "react-router-dom";
 import { api } from "@/lib/axios";
 import { useAuthStore } from "@/stores/authStore";
 import { Save, ArrowLeft, Plus, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface EmployeeProfile {
   id: number;
@@ -146,15 +155,10 @@ export default function EmployeeProfile() {
     return labels[level - 1] || "";
   };
 
-  const getProficiencyColor = (level: number) => {
-    const colors = [
-      "bg-gray-200",
-      "bg-blue-200",
-      "bg-green-200",
-      "bg-yellow-200",
-      "bg-red-200",
-    ];
-    return colors[level - 1] || "bg-gray-200";
+  const getProficiencyVariant = (level: number): "default" | "secondary" | "destructive" | "outline" => {
+    if (level >= 4) return "default";
+    if (level >= 3) return "secondary";
+    return "outline";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -190,238 +194,211 @@ export default function EmployeeProfile() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">読み込み中...</div>
+        <div className="text-muted-foreground">読み込み中...</div>
       </div>
     );
   }
 
   if (!profile) {
     return (
-      <div className="text-center text-gray-500 py-8">
+      <div className="text-center text-muted-foreground py-8">
         プロフィールが見つかりません
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-6">
-        <button
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => navigate("/employees")}
-          className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700"
+          className="mb-4"
         >
-          <ArrowLeft className="h-4 w-4 mr-1" />
+          <ArrowLeft className="h-4 w-4 mr-2" />
           社員一覧に戻る
-        </button>
+        </Button>
       </div>
 
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {profile.name}のプロフィール
-          </h2>
-        </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>{profile.name}のプロフィール</CardTitle>
+          <CardDescription>プロフィール情報とスキルを管理</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Basic Information (Read-only) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label>名前</Label>
+                <p className="text-sm">{profile.name}</p>
+              </div>
+              <div className="space-y-2">
+                <Label>メールアドレス</Label>
+                <p className="text-sm">{profile.email}</p>
+              </div>
+              <div className="space-y-2">
+                <Label>部署</Label>
+                <p className="text-sm">{profile.department || "-"}</p>
+              </div>
+              <div className="space-y-2">
+                <Label>役職</Label>
+                <p className="text-sm">{profile.position || "-"}</p>
+              </div>
+            </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Basic Information (Read-only) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                名前
-              </label>
-              <p className="mt-1 text-sm text-gray-900">{profile.name}</p>
+            {/* Editable Fields */}
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="self_introduction">自己紹介</Label>
+                <Textarea
+                  id="self_introduction"
+                  disabled={!canEdit}
+                  value={profile.self_introduction || ""}
+                  onChange={(e) =>
+                    setProfile({ ...profile, self_introduction: e.target.value })
+                  }
+                  placeholder="あなたの経験やスキル、興味のある分野について記述してください"
+                  className="min-h-[100px]"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="career_goals">キャリア目標</Label>
+                <Textarea
+                  id="career_goals"
+                  disabled={!canEdit}
+                  value={profile.career_goals || ""}
+                  onChange={(e) =>
+                    setProfile({ ...profile, career_goals: e.target.value })
+                  }
+                  placeholder="将来のキャリア目標や成長したい方向性について"
+                  className="min-h-[80px]"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="specialties">専門分野・得意分野</Label>
+                <Textarea
+                  id="specialties"
+                  disabled={!canEdit}
+                  value={profile.specialties || ""}
+                  onChange={(e) =>
+                    setProfile({ ...profile, specialties: e.target.value })
+                  }
+                  placeholder="特に得意とする技術や業務分野"
+                  className="min-h-[80px]"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="project_types">参加したいプロジェクトタイプ</Label>
+                <Input
+                  id="project_types"
+                  type="text"
+                  disabled={!canEdit}
+                  value={projectTypes}
+                  onChange={(e) => setProjectTypes(e.target.value)}
+                  placeholder="AI開発, Web開発, インフラ構築など（カンマ区切り）"
+                />
+              </div>
             </div>
+
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            {canEdit && (
+              <div className="flex justify-end">
+                <Button type="submit" disabled={saving}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? "保存中..." : "保存"}
+                </Button>
+              </div>
+            )}
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* スキル管理セクション */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
             <div>
-              <label className="block text-sm font-medium text-gray-700">
-                メールアドレス
-              </label>
-              <p className="mt-1 text-sm text-gray-900">{profile.email}</p>
+              <CardTitle>スキル</CardTitle>
+              <CardDescription>保有スキルと熟練度を管理</CardDescription>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                部署
-              </label>
-              <p className="mt-1 text-sm text-gray-900">
-                {profile.department || "-"}
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                役職
-              </label>
-              <p className="mt-1 text-sm text-gray-900">
-                {profile.position || "-"}
-              </p>
-            </div>
+            {canEdit && (
+              <Button size="sm" onClick={() => setShowSkillModal(true)}>
+                <Plus className="h-4 w-4 mr-1" />
+                スキルを追加
+              </Button>
+            )}
           </div>
-
-          {/* Editable Fields */}
-          <div className="space-y-6">
-            <div>
-              <label
-                htmlFor="self_introduction"
-                className="block text-sm font-medium text-gray-700"
-              >
-                自己紹介
-              </label>
-              <textarea
-                id="self_introduction"
-                rows={4}
-                disabled={!canEdit}
-                value={profile.self_introduction || ""}
-                onChange={(e) =>
-                  setProfile({ ...profile, self_introduction: e.target.value })
-                }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100"
-                placeholder="あなたの経験やスキル、興味のある分野について記述してください"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="career_goals"
-                className="block text-sm font-medium text-gray-700"
-              >
-                キャリア目標
-              </label>
-              <textarea
-                id="career_goals"
-                rows={3}
-                disabled={!canEdit}
-                value={profile.career_goals || ""}
-                onChange={(e) =>
-                  setProfile({ ...profile, career_goals: e.target.value })
-                }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100"
-                placeholder="将来のキャリア目標や成長したい方向性について"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="specialties"
-                className="block text-sm font-medium text-gray-700"
-              >
-                専門分野・得意分野
-              </label>
-              <textarea
-                id="specialties"
-                rows={3}
-                disabled={!canEdit}
-                value={profile.specialties || ""}
-                onChange={(e) =>
-                  setProfile({ ...profile, specialties: e.target.value })
-                }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100"
-                placeholder="特に得意とする技術や業務分野"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="project_types"
-                className="block text-sm font-medium text-gray-700"
-              >
-                参加したいプロジェクトタイプ
-              </label>
-              <input
-                id="project_types"
-                type="text"
-                disabled={!canEdit}
-                value={projectTypes}
-                onChange={(e) => setProjectTypes(e.target.value)}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm disabled:bg-gray-100"
-                placeholder="AI開発, Web開発, インフラ構築など（カンマ区切り）"
-              />
-            </div>
-          </div>
-
-          {/* スキル管理セクション */}
-          <div className="border-t pt-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">スキル</h3>
-              {canEdit && (
-                <button
-                  type="button"
-                  onClick={() => setShowSkillModal(true)}
-                  className="inline-flex items-center px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  スキルを追加
-                </button>
-              )}
-            </div>
-
-            {employeeSkills.length === 0 ? (
-              <p className="text-sm text-gray-500">
-                スキルが登録されていません
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {employeeSkills.map((skill) => (
-                  <div
-                    key={skill.skill_id}
-                    className="bg-gray-50 rounded-lg p-4"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <span className="font-medium text-gray-900">
-                          {skill.skill_name}
-                        </span>
-                        <span className="ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-800">
-                          {skill.skill_category}
-                        </span>
+        </CardHeader>
+        <CardContent>
+          {employeeSkills.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              スキルが登録されていません
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {employeeSkills.map((skill) => (
+                <Card key={skill.skill_id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{skill.skill_name}</span>
+                        <Badge variant="secondary">{skill.skill_category}</Badge>
                       </div>
                       {canEdit && (
-                        <button
-                          type="button"
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => handleRemoveSkill(skill.skill_id)}
-                          aria-label="スキル削除"
-                          className="text-red-500 hover:text-red-700"
                         >
                           <X className="h-4 w-4" />
-                        </button>
+                        </Button>
                       )}
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs text-gray-500 mb-1">
-                          熟練度
-                        </label>
+                      <div className="space-y-2">
+                        <Label className="text-xs">熟練度</Label>
                         {canEdit ? (
-                          <select
-                            value={skill.proficiency_level}
-                            onChange={(e) =>
+                          <Select
+                            value={String(skill.proficiency_level)}
+                            onValueChange={(value) =>
                               handleUpdateSkill(
                                 skill.skill_id,
-                                Number(e.target.value),
+                                Number(value),
                                 skill.years_of_experience
                               )
                             }
-                            className="block w-full text-sm rounded-md border-gray-300"
                           >
-                            <option value={1}>初心者</option>
-                            <option value={2}>初級</option>
-                            <option value={3}>中級</option>
-                            <option value={4}>上級</option>
-                            <option value={5}>エキスパート</option>
-                          </select>
+                            <SelectTrigger className="h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1">初心者</SelectItem>
+                              <SelectItem value="2">初級</SelectItem>
+                              <SelectItem value="3">中級</SelectItem>
+                              <SelectItem value="4">上級</SelectItem>
+                              <SelectItem value="5">エキスパート</SelectItem>
+                            </SelectContent>
+                          </Select>
                         ) : (
-                          <span
-                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getProficiencyColor(
-                              skill.proficiency_level
-                            )}`}
-                          >
+                          <Badge variant={getProficiencyVariant(skill.proficiency_level)}>
                             {getProficiencyLabel(skill.proficiency_level)}
-                          </span>
+                          </Badge>
                         )}
                       </div>
-                      <div>
-                        <label className="block text-xs text-gray-500 mb-1">
-                          経験年数
-                        </label>
+                      <div className="space-y-2">
+                        <Label className="text-xs">経験年数</Label>
                         {canEdit ? (
-                          <input
+                          <Input
                             type="number"
                             min="0"
                             max="50"
@@ -433,125 +410,101 @@ export default function EmployeeProfile() {
                                 Number(e.target.value)
                               )
                             }
-                            className="block w-full text-sm rounded-md border-gray-300"
+                            className="h-8"
                           />
                         ) : (
-                          <span className="text-sm text-gray-900">
-                            {skill.years_of_experience}年
-                          </span>
+                          <p className="text-sm">{skill.years_of_experience}年</p>
                         )}
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <div className="text-sm text-red-800">{error}</div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           )}
-
-          {canEdit && (
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={saving}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? "保存中..." : "保存"}
-              </button>
-            </div>
-          )}
-        </form>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* スキル追加モーダル */}
-      {showSkillModal && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              スキルを追加
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  スキル
-                </label>
-                <select
-                  value={selectedSkillId || ""}
-                  onChange={(e) => setSelectedSkillId(Number(e.target.value))}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                >
-                  <option value="">選択してください</option>
+      <Dialog open={showSkillModal} onOpenChange={setShowSkillModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>スキルを追加</DialogTitle>
+            <DialogDescription>
+              新しいスキルを選択して熟練度と経験年数を設定してください
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>スキル</Label>
+              <Select
+                value={selectedSkillId ? String(selectedSkillId) : ""}
+                onValueChange={(value) => setSelectedSkillId(Number(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="選択してください" />
+                </SelectTrigger>
+                <SelectContent>
                   {availableSkills
                     .filter(
                       (skill) =>
                         !employeeSkills.some((es) => es.skill_id === skill.id)
                     )
                     .map((skill) => (
-                      <option key={skill.id} value={skill.id}>
+                      <SelectItem key={skill.id} value={String(skill.id)}>
                         {skill.name} ({skill.category})
-                      </option>
+                      </SelectItem>
                     ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  熟練度
-                </label>
-                <select
-                  value={proficiencyLevel}
-                  onChange={(e) => setProficiencyLevel(Number(e.target.value))}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                >
-                  <option value={1}>初心者</option>
-                  <option value={2}>初級</option>
-                  <option value={3}>中級</option>
-                  <option value={4}>上級</option>
-                  <option value={5}>エキスパート</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  経験年数
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="50"
-                  value={yearsOfExperience}
-                  onChange={(e) => setYearsOfExperience(Number(e.target.value))}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="mt-6 flex gap-3 justify-end">
-              <button
-                onClick={() => {
-                  setShowSkillModal(false);
-                  setSelectedSkillId(null);
-                  setProficiencyLevel(3);
-                  setYearsOfExperience(1);
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            <div className="space-y-2">
+              <Label>熟練度</Label>
+              <Select
+                value={String(proficiencyLevel)}
+                onValueChange={(value) => setProficiencyLevel(Number(value))}
               >
-                キャンセル
-              </button>
-              <button
-                onClick={handleAddSkill}
-                disabled={!selectedSkillId}
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                追加
-              </button>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">初心者</SelectItem>
+                  <SelectItem value="2">初級</SelectItem>
+                  <SelectItem value="3">中級</SelectItem>
+                  <SelectItem value="4">上級</SelectItem>
+                  <SelectItem value="5">エキスパート</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>経験年数</Label>
+              <Input
+                type="number"
+                min="0"
+                max="50"
+                value={yearsOfExperience}
+                onChange={(e) => setYearsOfExperience(Number(e.target.value))}
+              />
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowSkillModal(false);
+                setSelectedSkillId(null);
+                setProficiencyLevel(3);
+                setYearsOfExperience(1);
+              }}
+            >
+              キャンセル
+            </Button>
+            <Button onClick={handleAddSkill} disabled={!selectedSkillId}>
+              追加
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
