@@ -95,7 +95,7 @@ describe("EmployeeProfile Skill Features", () => {
         if (url === "/employees/1") {
           return Promise.resolve({ data: mockEmployee });
         }
-        if (url === "/employees/1/skills") {
+        if (url === "/skills/employees/1/skills") {
           return Promise.resolve({ data: mockEmployeeSkills });
         }
         if (url === "/skills/") {
@@ -149,7 +149,7 @@ describe("EmployeeProfile Skill Features", () => {
         if (url === "/employees/1") {
           return Promise.resolve({ data: mockEmployee });
         }
-        if (url === "/employees/1/skills") {
+        if (url === "/skills/employees/1/skills") {
           return Promise.resolve({ data: [] });
         }
         if (url === "/skills/") {
@@ -177,7 +177,7 @@ describe("EmployeeProfile Skill Features", () => {
         if (url === "/employees/1") {
           return Promise.resolve({ data: mockEmployee });
         }
-        if (url === "/employees/1/skills") {
+        if (url === "/skills/employees/1/skills") {
           return Promise.resolve({ data: mockEmployeeSkills });
         }
         if (url === "/skills/") {
@@ -254,7 +254,7 @@ describe("EmployeeProfile Skill Features", () => {
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(api.post).toHaveBeenCalledWith("/employees/1/skills", {
+        expect(api.post).toHaveBeenCalledWith("/skills/employees/1/skills", {
           skill_id: 3,
           proficiency_level: 2,
           years_of_experience: 1,
@@ -282,7 +282,7 @@ describe("EmployeeProfile Skill Features", () => {
         expect(window.confirm).toHaveBeenCalledWith(
           "このスキルを削除してもよろしいですか？"
         );
-        expect(api.delete).toHaveBeenCalledWith("/employees/1/skills/1");
+        expect(api.delete).toHaveBeenCalledWith("/skills/employees/1/skills/1");
       });
     });
 
@@ -304,7 +304,7 @@ describe("EmployeeProfile Skill Features", () => {
       fireEvent.change(proficiencySelects[0], { target: { value: "5" } });
 
       await waitFor(() => {
-        expect(api.put).toHaveBeenCalledWith("/employees/1/skills/1", {
+        expect(api.put).toHaveBeenCalledWith("/skills/employees/1/skills/1", {
           proficiency_level: 5,
           years_of_experience: 3,
         });
@@ -329,7 +329,7 @@ describe("EmployeeProfile Skill Features", () => {
       fireEvent.change(reactYearsInput!, { target: { value: "4" } });
 
       await waitFor(() => {
-        expect(api.put).toHaveBeenCalledWith("/employees/1/skills/1", {
+        expect(api.put).toHaveBeenCalledWith("/skills/employees/1/skills/1", {
           proficiency_level: 4,
           years_of_experience: 4,
         });
@@ -346,7 +346,7 @@ describe("EmployeeProfile Skill Features", () => {
         if (url === "/employees/1") {
           return Promise.resolve({ data: mockEmployee });
         }
-        if (url === "/employees/1/skills") {
+        if (url === "/skills/employees/1/skills") {
           return Promise.resolve({ data: mockEmployeeSkills });
         }
         if (url === "/skills/") {
@@ -378,7 +378,7 @@ describe("EmployeeProfile Skill Features", () => {
         if (url === "/employees/1") {
           return Promise.resolve({ data: mockEmployee });
         }
-        if (url === "/employees/1/skills") {
+        if (url === "/skills/employees/1/skills") {
           return Promise.resolve({ data: mockEmployeeSkills });
         }
         if (url === "/skills/") {
@@ -437,7 +437,7 @@ describe("EmployeeProfile Skill Features", () => {
         if (url === "/employees/1") {
           return Promise.resolve({ data: mockEmployee });
         }
-        if (url === "/employees/1/skills") {
+        if (url === "/skills/employees/1/skills") {
           return Promise.resolve({ data: mockEmployeeSkills });
         }
         if (url === "/skills/") {
@@ -478,7 +478,7 @@ describe("EmployeeProfile Skill Features", () => {
         if (url === "/employees/1") {
           return Promise.resolve({ data: mockEmployee });
         }
-        if (url === "/employees/1/skills") {
+        if (url === "/skills/employees/1/skills") {
           return Promise.resolve({ data: mockEmployeeSkills });
         }
         if (url === "/skills/") {
@@ -511,7 +511,7 @@ describe("EmployeeProfile Skill Features", () => {
         if (url === "/employees/1") {
           return Promise.resolve({ data: mockEmployee });
         }
-        if (url === "/employees/1/skills") {
+        if (url === "/skills/employees/1/skills") {
           return Promise.resolve({ data: mockEmployeeSkills });
         }
         if (url === "/skills/") {

@@ -74,7 +74,7 @@ export default function EmployeeProfile() {
 
   const fetchEmployeeSkills = async () => {
     try {
-      const response = await api.get(`/employees/${id}/skills`);
+      const response = await api.get(`/skills/employees/${id}/skills`);
       setEmployeeSkills(response.data);
     } catch (error) {
       console.error("Failed to fetch employee skills:", error);
@@ -94,7 +94,7 @@ export default function EmployeeProfile() {
     if (!selectedSkillId || !canEdit) return;
 
     try {
-      await api.post(`/employees/${id}/skills`, {
+      await api.post(`/skills/employees/${id}/skills`, {
         skill_id: selectedSkillId,
         proficiency_level: proficiencyLevel,
         years_of_experience: yearsOfExperience,
@@ -118,7 +118,7 @@ export default function EmployeeProfile() {
     if (!canEdit) return;
 
     try {
-      await api.put(`/employees/${id}/skills/${skillId}`, {
+      await api.put(`/skills/employees/${id}/skills/${skillId}`, {
         proficiency_level: proficiency,
         years_of_experience: years,
       });
@@ -133,7 +133,7 @@ export default function EmployeeProfile() {
     if (!canEdit || !confirm("このスキルを削除してもよろしいですか？")) return;
 
     try {
-      await api.delete(`/employees/${id}/skills/${skillId}`);
+      await api.delete(`/skills/employees/${id}/skills/${skillId}`);
       await fetchEmployeeSkills();
     } catch (error) {
       console.error("Failed to remove skill:", error);
