@@ -11,6 +11,7 @@ import Skills from '@/pages/Skills';
 import Projects from '@/pages/Projects';
 import ProjectDetail from '@/pages/ProjectDetail';
 import ProjectForm from '@/pages/ProjectForm';
+import ProjectMatching from '@/pages/ProjectMatching';
 import Clients from '@/pages/Clients';
 
 function App() {
@@ -100,6 +101,16 @@ function App() {
             <PrivateRoute>
               <Layout>
                 <ProjectForm />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/projects/:id/matching"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <ProjectMatching />
               </Layout>
             </PrivateRoute>
           }

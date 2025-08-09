@@ -6,6 +6,8 @@ import enum
 
 
 class ProjectStatus(str, enum.Enum):
+    DRAFT = "draft"
+    RECRUITING = "recruiting"
     PLANNING = "planning"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
@@ -37,6 +39,12 @@ class Project(Base):
     team_size = Column(Integer)
     status = Column(String(50), default=ProjectStatus.PLANNING.value)
     budget = Column(String(100))  # 予算規模
+    
+    # 募集関連フィールド
+    estimated_duration = Column(Integer)  # 予定期間（日数）
+    priority = Column(Integer, default=3)  # 優先度 1-5
+    recruitment_deadline = Column(Date)  # 募集締切
+    required_proficiency_level = Column(Integer, default=3)  # 必要スキルレベル 1-5
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -73,3 +81,4 @@ class ProjectSkill(Base):
     project_id = Column(Integer, ForeignKey("projects.id"), primary_key=True)
     skill_id = Column(Integer, ForeignKey("skills.id"), primary_key=True)
     importance_level = Column(Integer, default=3)  # 1-5の重要度
+    required_proficiency_level = Column(Integer, default=3)  # 必要習熟度 1-5

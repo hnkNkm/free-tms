@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Dict
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
@@ -14,6 +14,7 @@ from app.schemas.project import (
     ProjectMemberInDB,
 )
 from app.api.routes.auth import get_current_user
+from app.services.matching_service import MatchingService
 
 router = APIRouter()
 
@@ -312,3 +313,66 @@ def remove_project_member(
     db.commit()
     
     return {"message": "Member removed from project successfully"}
+
+
+# Matching endpoints
+@router.get("/{project_id}/recommendations", response_model=List[Dict])
+def get_project_recommendations(
+    project_id: int,
+    limit: int = Query(10, ge=1, le=50),
+    min_score: float = Query(30.0, ge=0, le=100),
+    db: Session = Depends(deps.get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    """Get employee recommendations for a project (manager/admin only)."""
+    if current_user.role not in ["admin", "manager"]:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+    
+    # Check project exists
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Get recommendations
+    matching_service = MatchingService(db)
+    try:
+        recommendations = matching_service.get_project_recommendations(
+            project_id=project_id,
+            limit=limit,
+            min_score=min_score
+        )
+        return recommendations
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/{project_id}/match-employees", response_model=Dict)
+def match_employees_to_project(
+    project_id: int,
+    skill_weight: float = Query(0.5, ge=0, le=1),
+    experience_weight: float = Query(0.3, ge=0, le=1),
+    availability_weight: float = Query(0.2, ge=0, le=1),
+    db: Session = Depends(deps.get_db),
+    current_user: Employee = Depends(get_current_user),
+):
+    """Run bulk matching analysis for a project (manager/admin only)."""
+    if current_user.role not in ["admin", "manager"]:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+    
+    # Check project exists
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Run matching
+    matching_service = MatchingService(db)
+    try:
+        result = matching_service.bulk_match_employees(
+            project_id=project_id,
+            skill_weight=skill_weight,
+            experience_weight=experience_weight,
+            availability_weight=availability_weight
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

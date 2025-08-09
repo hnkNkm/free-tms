@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { ArrowLeft, Edit, UserPlus, Trash2, Calendar, DollarSign, Users, Briefcase, Star } from "lucide-react";
+import { ArrowLeft, Edit, UserPlus, Trash2, Calendar, DollarSign, Users, Briefcase, Star, Search } from "lucide-react";
 
 interface ProjectMember {
   id: number;
@@ -318,12 +318,23 @@ export default function ProjectDetail() {
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle>プロジェクトメンバー</CardTitle>
-            {canEdit && (
-              <Button onClick={() => setShowAddMemberDialog(true)}>
-                <UserPlus className="mr-2 h-4 w-4" />
-                メンバーを追加
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {canEdit && project.status === "recruiting" && (
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate(`/projects/${project.id}/matching`)}
+                >
+                  <Search className="mr-2 h-4 w-4" />
+                  適任者を探す
+                </Button>
+              )}
+              {canEdit && (
+                <Button onClick={() => setShowAddMemberDialog(true)}>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  メンバーを追加
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
