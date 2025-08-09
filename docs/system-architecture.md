@@ -112,8 +112,8 @@ free-tms/
   - 得意分野・専門知識
   - 自然言語クエリ対応
 
-### 5. ジョブマッチング機能
-- 新規案件に対する適任者推薦
+### 5. プロジェクトマッチング機能
+- 募集中プロジェクトに対する適任者推薦
   - 必要スキルマッチング（重み付けスコア）
   - 過去の類似プロジェクト経験者抽出
   - 顧客関係スコア（既存関係の活用）
@@ -123,7 +123,7 @@ free-tms/
   - コサイン類似度（スキルベクトル）
   - 協調フィルタリング（過去の成功パターン）
   - 機械学習モデル（Random Forest, XGBoost）
-  - BERT/Doc2Vecによる文書類似度（自己アピールと案件説明）
+  - BERT/Doc2Vecによる文書類似度（自己アピールとプロジェクト説明）
 - チーム編成最適化
   - スキル補完性分析
   - コミュニケーションコスト考慮
@@ -171,25 +171,19 @@ free-tms/
 - id
 - name
 - client_id
+- status (draft/recruiting/planning/in_progress/completed/on_hold/cancelled)
 - start_date
 - end_date
 - description
 - technologies
 - required_skills (多対多)
+- preferred_skills (多対多)  # 推奨スキル
 - difficulty_level
 - team_size
-- status
-
-### Job（新規案件）
-- id
-- title
-- client_id
-- required_skills (多対多)
-- preferred_skills (多対多)
-- estimated_duration
-- team_size_needed
-- priority
-- description
+- estimated_duration  # 予定期間
+- priority  # 優先度
+- recruitment_deadline  # 募集締切
+- budget  # 予算
 
 ### Client（顧客）
 - id
@@ -237,16 +231,16 @@ free-tms/
 - `GET /api/analytics/team-recommendations` - チーム編成推薦
 - `GET /api/analytics/employee-similarity` - 社員類似度分析
 - `POST /api/analytics/predict-career-path` - キャリアパス予測
-- `POST /api/jobs` - 新規案件登録
-- `POST /api/jobs/{id}/match-employees` - 案件に対する適任者マッチング
-- `GET /api/jobs/{id}/recommendations` - 推薦社員リスト（スコア付き）
-- `POST /api/jobs/{id}/simulate-team` - チーム編成シミュレーション
+- `GET /api/projects?status=recruiting` - 募集中プロジェクト一覧
+- `POST /api/projects/{id}/match-employees` - 適任者マッチング
+- `GET /api/projects/{id}/recommendations` - 推薦社員リスト（スコア付き）
+- `POST /api/projects/{id}/simulate-team` - チーム編成シミュレーション
 
 ## セキュリティ考慮事項
 - JWT認証（全社員ログイン可能）
 - ロールベースアクセス制御（RBAC）
   - 一般社員: 自分の情報閲覧・編集、検索、分析結果閲覧
-  - マネージャー: チームメンバー情報閲覧、ジョブマッチング利用
+  - マネージャー: チームメンバー情報閲覧、プロジェクトマッチング利用
   - 管理者: 全機能アクセス、データ管理
 - APIレート制限
 - データ暗号化
@@ -256,23 +250,30 @@ free-tms/
 
 ## 開発フェーズ
 
-### Phase 1: 基盤構築
-1. プロジェクト初期設定
-2. データベース設計・構築
-3. 認証システム実装
-4. 基本的なCRUD API
+### Phase 1: 基盤構築 ✅ 完了
+1. プロジェクト初期設定 ✅
+2. データベース設計・構築 ✅
+3. 認証システム実装 ✅
+4. 基本的なCRUD API ✅
 
-### Phase 2: コア機能実装
-1. 社員管理機能
-2. プロジェクト管理機能
-3. 検索機能
+### Phase 2: コア機能実装 🚧 進行中
+1. 社員管理機能 ✅
+2. プロジェクト管理機能 ✅
+3. スキル管理機能 ✅
+4. クライアント管理機能 ✅
+5. 検索機能 ⏳ 未実装
 
-### Phase 3: 可視化・分析
-1. ダッシュボード
+### Phase 3: マッチング機能 ⏳ 未実装
+1. 募集中プロジェクト機能
+2. 適任者マッチング
+3. 勧誘メール機能
+
+### Phase 4: 可視化・分析 ⏳ 未実装
+1. ダッシュボード（基本版のみ実装済）
 2. グラフ・チャート実装
 3. レポート機能
 
-### Phase 4: 拡張機能
+### Phase 5: 拡張機能 ⏳ 未実装
 1. 通知システム
 2. インポート/エクスポート
 3. 外部システム連携
@@ -332,14 +333,14 @@ services:
 ## プロジェクト勧誘メール機能
 
 ### 機能概要
-- マネージャーが新規案件に適した社員を検索・選定
+- マネージャーが募集中プロジェクトに適した社員を検索・選定
 - 選定した複数の社員に一括で勧誘メールを送信
 - メールテンプレートのカスタマイズ
 - 返信状況のトラッキング
 
 ### メール機能詳細
 - **テンプレート管理**
-  - 案件タイプ別テンプレート
+  - プロジェクトタイプ別テンプレート
   - 変数埋め込み（社員名、プロジェクト詳細等）
   - プレビュー機能
 - **送信管理**
@@ -353,9 +354,9 @@ services:
 
 ### データモデル追加
 ```
-### JobInvitation（勧誘）
+### ProjectInvitation（プロジェクト勧誘）
 - id
-- job_id
+- project_id
 - employee_id
 - sent_at
 - opened_at
@@ -373,8 +374,8 @@ services:
 ```
 
 ### API追加
-- `POST /api/jobs/{id}/invitations` - 勧誘メール送信
-- `GET /api/jobs/{id}/invitations` - 勧誘状況一覧
+- `POST /api/projects/{id}/invitations` - 勧誘メール送信
+- `GET /api/projects/{id}/invitations` - 勧誘状況一覧
 - `PUT /api/invitations/{id}/response` - 社員の返答登録
 - `GET /api/email-templates` - テンプレート一覧
 - `POST /api/email-templates` - テンプレート作成
