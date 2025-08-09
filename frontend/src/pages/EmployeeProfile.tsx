@@ -436,12 +436,12 @@ export default function EmployeeProfile() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>スキル</Label>
+              <Label htmlFor="skill-select">スキル</Label>
               <Select
                 value={selectedSkillId ? String(selectedSkillId) : ""}
                 onValueChange={(value) => setSelectedSkillId(Number(value))}
               >
-                <SelectTrigger>
+                <SelectTrigger id="skill-select" aria-label="スキル">
                   <SelectValue placeholder="選択してください" />
                 </SelectTrigger>
                 <SelectContent>
@@ -459,12 +459,12 @@ export default function EmployeeProfile() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>熟練度</Label>
+              <Label htmlFor="proficiency-select">熟練度</Label>
               <Select
                 value={String(proficiencyLevel)}
                 onValueChange={(value) => setProficiencyLevel(Number(value))}
               >
-                <SelectTrigger>
+                <SelectTrigger id="proficiency-select" aria-label="熟練度">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -477,8 +477,9 @@ export default function EmployeeProfile() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>経験年数</Label>
+              <Label htmlFor="experience-input">経験年数</Label>
               <Input
+                id="experience-input"
                 type="number"
                 min="0"
                 max="50"

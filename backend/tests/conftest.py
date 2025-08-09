@@ -2,7 +2,8 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from app.db.database import Base, get_db
+from app.db.database import Base, get_db as db_get_db
+from app.api import deps
 from main import app
 import os
 
@@ -12,7 +13,7 @@ SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
 )
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 @pytest.fixture(scope="session")
@@ -21,6 +22,7 @@ def setup_db():
     from app.models import employee  # noqa: F401
     from app.models import skill     # noqa: F401
     from app.models import project   # noqa: F401
+    from app.models import client    # noqa: F401
 
     Base.metadata.create_all(bind=engine)
     yield
@@ -49,7 +51,9 @@ def client(db_session):
         finally:
             pass
 
-    app.dependency_overrides[get_db] = override_get_db
+    # Override both: the one used by routes, and the one referenced in tests
+    app.dependency_overrides[deps.get_db] = override_get_db
+    app.dependency_overrides[db_get_db] = override_get_db
 
     with TestClient(app) as test_client:
         yield test_client
@@ -78,4 +82,34 @@ def admin_user_data():
         "department": "管理部",
         "position": "システム管理者",
         "role": "admin"
+    }
+
+
+@pytest.fixture
+def test_client_data():
+    return {
+        "name": "テストクライアント株式会社",
+        "industry": "IT",
+        "contact_person": "山田太郎",
+        "contact_email": "yamada@testclient.com",
+        "contact_phone": "03-1234-5678",
+        "address": "東京都千代田区",
+        "website": "https://testclient.com",
+        "notes": "テスト用クライアント"
+    }
+
+
+@pytest.fixture
+def test_project_data():
+    return {
+        "name": "テストプロジェクト",
+        "description": "これはテスト用のプロジェクトです",
+        "start_date": "2024-01-01",
+        "end_date": "2024-12-31",
+        "technologies": "Python, FastAPI, PostgreSQL",
+        "difficulty_level": 3,
+        "team_size": 5,
+        "status": "planning",
+        "budget": "500万円",
+        "skill_ids": []
     }

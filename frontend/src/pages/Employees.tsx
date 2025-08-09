@@ -34,6 +34,7 @@ export default function Employees() {
   const currentUser = useAuthStore((state) => state.user);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [skills, setSkills] = useState<Skill[]>([]);
   const [selectedSkillIds, setSelectedSkillIds] = useState<number[]>([]);
@@ -58,10 +59,13 @@ export default function Employees() {
 
   const fetchEmployees = async () => {
     try {
+      setError(null);
       const response = await api.get("/employees/");
       setEmployees(response.data);
     } catch (error) {
       console.error("Failed to fetch employees:", error);
+      setError("社員の取得に失敗しました");
+      setEmployees([]);
     } finally {
       setLoading(false);
     }
@@ -199,6 +203,12 @@ export default function Employees() {
       </div>
 
       {loading && <div className="text-muted-foreground">読み込み中...</div>}
+      
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       {/* Search and Filters */}
       <Card>
