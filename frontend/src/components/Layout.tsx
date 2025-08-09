@@ -11,7 +11,9 @@ import {
   Menu,
   X,
   Award,
-  User
+  User,
+  FolderOpen,
+  Building2
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -45,6 +47,8 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/', label: 'ダッシュボード', icon: Home },
     { path: '/employees', label: '社員管理', icon: Users },
     { path: '/skills', label: 'スキル管理', icon: Award },
+    { path: '/projects', label: 'プロジェクト管理', icon: FolderOpen },
+    { path: '/clients', label: 'クライアント管理', icon: Building2 },
     { path: '/search', label: '検索', icon: Search },
     { path: '/jobs', label: 'ジョブ管理', icon: Briefcase },
     { path: '/analytics', label: '分析', icon: BarChart3 },

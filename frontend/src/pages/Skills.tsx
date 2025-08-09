@@ -264,6 +264,7 @@ export default function Skills() {
                             variant="ghost"
                             size="icon"
                             onClick={() => startEdit(skill)}
+                            aria-label="編集"
                           >
                             <Edit2 className="h-4 w-4" />
                           </Button>
@@ -272,6 +273,7 @@ export default function Skills() {
                             size="icon"
                             onClick={() => handleDeleteSkill(skill.id)}
                             className="text-destructive hover:text-destructive"
+                            aria-label="削除"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

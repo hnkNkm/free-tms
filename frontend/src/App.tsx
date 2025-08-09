@@ -8,6 +8,10 @@ import Dashboard from '@/pages/Dashboard';
 import Employees from '@/pages/Employees';
 import EmployeeProfile from '@/pages/EmployeeProfile';
 import Skills from '@/pages/Skills';
+import Projects from '@/pages/Projects';
+import ProjectDetail from '@/pages/ProjectDetail';
+import ProjectForm from '@/pages/ProjectForm';
+import Clients from '@/pages/Clients';
 
 function App() {
   const fetchCurrentUser = useAuthStore((state) => state.fetchCurrentUser);
@@ -56,6 +60,56 @@ function App() {
             <PrivateRoute>
               <Layout>
                 <Skills />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/projects"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <Projects />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/projects/new"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <ProjectForm />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/projects/:id"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <ProjectDetail />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/projects/:id/edit"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <ProjectForm />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/clients"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <Clients />
               </Layout>
             </PrivateRoute>
           }
